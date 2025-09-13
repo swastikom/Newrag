@@ -141,7 +141,8 @@ async def get_chats(document_id: str):
 @app.post("/chat", response_model=ChatResponse)
 async def chat_with_document(request: ChatRequest):
     """
-    Processes a user's query against a document, retrieves context from ChromaDB, and generates a response.
+    Processes a user's query against a document, retrieves context from ChromaDB,
+    and generates a response using a score-based search.
     """
     document_id = request.document_id
     query = request.query
@@ -150,33 +151,39 @@ async def chat_with_document(request: ChatRequest):
     if not any(doc['document_id'] == document_id for doc in documents):
         raise HTTPException(status_code=404, detail="Document not found")
         
-    # 1. Perform a similarity search, filtering by document_id
-    relevant_docs: List[Any] = vector_store.similarity_search(
+    # 1. Perform a similarity search with scores, filtering by document_id
+    docs_and_scores: List[Tuple[Any, float]] = vector_store.similarity_search_with_score(
         query=query,
-        k=3,
+        k=1, # Search a bit wider to find relevant docs that pass the threshold
         filter={"document_id": document_id}
     )
     
-    # Check for relevant context. If none is found, return a polite message
-    if not relevant_docs:
-        print("No relevant context found for the query. Sending fallback message.")
+    # Define a strict score threshold. Scores are typically between 0 and 1.
+    score_threshold = 0.90
+
+    relevant_chunks = []
+    for doc, score in docs_and_scores:
+        if score >= score_threshold:
+            relevant_chunks.append(doc.page_content)
+            
+    # Check for relevant context. If none is found after filtering, return a polite message
+    if not relevant_chunks:
+        print("No relevant context found above the score threshold.")
         fallback_message = (
             "I'm sorry, I cannot answer this question based on the content of this document. "
             "Please ask a question that is directly related to this document."
         )
-        # Store the user's message and the fallback message
         db.add_chat_message(document_id, "user", query)
         db.add_chat_message(document_id, "model", fallback_message)
         
         return ChatResponse(role="model", content=fallback_message)
     
     # 2. Extract the context from the search results
-    print(f"Found {len(relevant_docs)} relevant documents for the query.")
-    relevant_chunks = [doc.page_content for doc in relevant_docs]
-    print(f"Relevant Chunks: {relevant_chunks}")
     context = "\n---\n".join(relevant_chunks)
+    print(f"Context extracted for query: {context}")
     
     # 3. Construct the RAG prompt for the LLM
+    print("Relevant context found, generating response...")
     prompt = f"Context:\n{context}\n\nQuestion: {query}"
     
     # 4. Call the LLM to get a grounded response
