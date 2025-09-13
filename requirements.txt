@@ -1,0 +1,12 @@
+pypdf
+langchain
+langchain-ollama
+langchain-chroma
+langchain_community
+pandas
+fastapi
+sqlalchemy
+uvicorn
+python-multipart
+streamlit
+uv
