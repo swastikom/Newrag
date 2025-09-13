@@ -11,8 +11,8 @@ from contextlib import asynccontextmanager
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from server.functions.util import chunk_text, format_history, get_llm_response, get_text_from_pdf, is_meta_query
-from server.models.chat_models import ChatRequest, ChatResponse, DocumentSummary
+from functions.util import chunk_text, format_history, get_llm_response, get_text_from_pdf, is_meta_query
+from models.chat_models import ChatRequest, ChatResponse, DocumentSummary
 
 # Load environment variables
 load_dotenv()

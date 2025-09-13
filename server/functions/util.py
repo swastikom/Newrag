@@ -4,7 +4,9 @@ import io
 from typing import List, Dict
 from PyPDF2 import PdfReader
 from fastapi import UploadFile
-from main import llm
+from langchain_ollama import ChatOllama
+
+llm = ChatOllama(model="llama3.2")
 
 def get_text_from_pdf(file: UploadFile) -> str:
     """
