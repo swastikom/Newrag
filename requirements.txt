@@ -1,8 +1,4 @@
 pypdf
-langchain
-langchain-ollama
-langchain-chroma
-langchain_community
 pandas
 fastapi
 sqlalchemy
@@ -10,3 +6,11 @@ uvicorn
 python-multipart
 streamlit
 uv
+
+# LangChain ecosystem
+langchain
+langchain-core
+langchain-community
+langchain-ollama
+langchain-chroma
+chromadb

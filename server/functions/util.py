@@ -1,6 +1,7 @@
 
 # --- Utility Functions ---
 import io
+import re
 from typing import List, Dict
 from PyPDF2 import PdfReader
 from fastapi import UploadFile
@@ -38,10 +39,17 @@ def get_llm_response(prompt: str) -> str:
     # response.content expected; be defensive
     return getattr(response, "content", str(response))
 
+
+
 def is_meta_query(query: str) -> bool:
-    """Simple heuristic to detect meta/conversational queries."""
-    q = (query or "").lower()
-    meta_keywords = [
+    """Detect meta/conversational queries using keywords and regex."""
+    if not query:
+        return False
+
+    q = query.lower().strip()
+
+    # Multi-word phrases (check with substring search)
+    meta_phrases = (
         "what did i just ask",
         "repeat my question",
         "what was my last question",
@@ -49,12 +57,22 @@ def is_meta_query(query: str) -> bool:
         "what did you just say",
         "repeat that",
         "what did i ask",
-        "what did i just ask?"
-    ]
-    return any(keyword in q for keyword in meta_keywords)
+    )
+
+    # Quick substring scan for phrases
+    if any(phrase in q for phrase in meta_phrases):
+        return True
+
+    # Single meta words (match whole words only)
+    meta_words = {"what", "repeat", "summarize", "why", "how", "explain"}
+
+    # Regex word boundary search avoids partial matches
+    return bool(re.search(r"\b(" + "|".join(meta_words) + r")\b", q))
+
 
 def format_history(history: List[Dict[str, str]], max_turns: int = 5) -> str:
     """Format the last N turns of chat history for the LLM prompt."""
+    print("Formatting history with max_turns =", max_turns)
     if not history:
         return ""
     # Keep last max_turns user+assistant turns (approx 2*max_turns messages)
